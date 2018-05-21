@@ -13,6 +13,9 @@ A place to play with Apache Kafka
 
 # Starting Kafka
 
+    # adjust memory if required
+    export KAFKA_HEAP_OPTS="-Xmx500M -Xms500M"
+
     # start zookeeper
     cd kafka_2.11-1.1.0
     bin/zookeeper-server-start.sh config/zookeeper.properties
@@ -48,6 +51,26 @@ A place to play with Apache Kafka
 
     # subscribe:
     bin/kafka-console-consumer.sh --bootstrap-server localhost:9093 --topic my-topic --from-beginning
+
+# Starting Producer
+
+    cd producer
+
+    mvn clean install -DskipTests && java -jar target/producer-swarm.jar
+
+or...
+
+    mvn clean package && java -jar target/producer-swarm.jar
+
+# Starting Consumer
+
+    cd consumer
+
+    mvn clean install -DskipTests && java -jar target/consumer-swarm.jar
+
+or...
+
+    mvn clean package && java -jar target/consumer-swarm.jar
 
 
 # TODO

@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.is;
 public class ProducerIT {
 
     @Test
-    public void test() throws Exception {
+    public void testSync() {
 
         RequestSpecBuilder builder = new RequestSpecBuilder();
         builder.setBaseUri(getBaseUriForLocalhost());
@@ -21,14 +21,31 @@ public class ProducerIT {
 
         given(spec)
                 .when()
-                .get("/producer/rest/p")
+                .get("/producer/rest/p/sync")
                 .then()
                 .log().body()
                 .statusCode(StatusCodes.OK)
                 .body("name", is("asdf"));
     }
 
-    public String getBaseUriForLocalhost() {
+    @Test
+    public void testAsync() {
+
+        RequestSpecBuilder builder = new RequestSpecBuilder();
+        builder.setBaseUri(getBaseUriForLocalhost());
+        builder.setAccept(ContentType.JSON);
+        RequestSpecification spec = builder.build();
+
+        given(spec)
+                .when()
+                .get("/producer/rest/p/async")
+                .then()
+                .log().body()
+                .statusCode(StatusCodes.OK)
+                .body("name", is("asdf"));
+    }
+
+    private String getBaseUriForLocalhost() {
         return "http://localhost:" + (8080 + Integer.getInteger("swarm.port.offset", 0));
     }
 }
