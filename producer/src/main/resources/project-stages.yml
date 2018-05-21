@@ -1,0 +1,8 @@
+swarm:
+   port:
+      offset: 0
+   context:
+      path: /producer
+kafka:
+   bootstrap:
+      servers: localhost:9093,localhost:9094

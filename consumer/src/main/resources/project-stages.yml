@@ -1,0 +1,8 @@
+swarm:
+   port:
+      offset: 1
+   context:
+      path: /consumer
+kafka:
+   bootstrap:
+      servers: localhost:9093,localhost:9094
