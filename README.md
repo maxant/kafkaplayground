@@ -62,6 +62,14 @@ or...
 
     mvn clean package && java -jar target/producer-swarm.jar
 
+Publish a message asynchronously:
+
+    http://localhost:8080/producer/rest/p/async
+
+or synchronously...
+
+    http://localhost:8080/producer/rest/p/sync
+
 # Starting Consumer
 
     cd consumer
