@@ -76,5 +76,6 @@ or...
 # TODO
 
 - is it possible to create topics on the fly or programatically or via REST ie without admin command line?
-- if a client's offset is stored in zookeeper and it does, will that work? since cliend ID is a UUID, no other client will every take over from that last offset
-
+- if a client's offset is stored in zookeeper and client then fails catastrophically and never restarts, will that work? since cliend ID is a UUID, no other client will every take over from that last offset. => yes, since the offset is stored per group-id => check this is true!!!
+- how to simulate jms topic? => send UUID with to groupId
+    - but that needs us to be able to tell it from which offset to start. ie to skip everything, ie a non-durable topic consumer => consumer.seek(...).  not actually necessary, coz new consumers start with the latest and only fetch old data if we seek first.

@@ -9,3 +9,6 @@ kafka:
    group:
       id: appName
    topics: my-topic,another-topic
+   commitAsync: false
+   poll:
+      interval: 1000

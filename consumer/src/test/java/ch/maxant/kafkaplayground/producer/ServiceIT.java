@@ -7,9 +7,8 @@ import io.undertow.util.StatusCodes;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.is;
 
-public class ConsumerIT {
+public class ServiceIT {
 
     @Test
     public void test() throws Exception {
@@ -24,8 +23,7 @@ public class ConsumerIT {
                 .get("/consumer/rest/c")
                 .then()
                 .log().body()
-                .statusCode(StatusCodes.OK)
-                .body("name", is("fdsa"));
+                .statusCode(StatusCodes.OK);
     }
 
     public String getBaseUriForLocalhost() {

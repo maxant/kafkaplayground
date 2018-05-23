@@ -1,7 +1,5 @@
 package ch.maxant.kafkaplayground.producer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -10,30 +8,22 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 @ApplicationScoped
-@Path("/p")
-public class Producer {
+public class ProducerService {
 
     private static AtomicLong totalWait = new AtomicLong();
     private static AtomicLong totalNumCalls = new AtomicLong();
 
-    private ObjectMapper objectMapper;
     private org.apache.kafka.clients.producer.Producer<String, String> producer;
 
     @PostConstruct
     public void init(){
-        objectMapper = new ObjectMapper();
         producer = createKafkaPublisher();
     }
 
@@ -42,14 +32,9 @@ public class Producer {
         producer.close();
     }
 
-    @GET
-    @Path("sync")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response sync() throws Exception {
+    public void sync(String topic, String key, String value) throws Exception {
 
-        Model model = processRequest();
-
-        ProducerRecord<String, String> record = createRecord(model);
+        ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value);
 
         // with this approach we block the thread until we get confirmation that the message has been published
         // according to our requirements (acks=3), but at the same time we don't commit the local transaction
@@ -60,31 +45,16 @@ public class Producer {
         System.out.println("Sent message to Kafka...");
         RecordMetadata metadata = response.get(30, TimeUnit.SECONDS); //blocks!
         updateStats(now);
-        System.out.println("Got ACK for message " + model.getId() + " " + metadata);
+        System.out.println("Got ACK for message " + value + " " + metadata);
         System.out.println("Average ACK " + ((double) totalWait.get() / totalNumCalls.get()) + "ms");
 
         // no need to update our model, at this stage we know for sure that it has been received by kafka,
         // at the expense of blocking the thread
-
-        return Response.ok(model).build();
     }
 
-    private void updateStats(long now) {
-        long diff = System.currentTimeMillis() - now;
-        if(diff < 100) { // ignore large values eg at startup
-            totalWait.addAndGet(diff);
-            totalNumCalls.incrementAndGet();
-        }
-    }
+    public void async(String topic, String key, String value, Consumer f) throws Exception {
 
-    @GET
-    @Path("async")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response async() throws Exception {
-
-        Model model = processRequest();
-
-        ProducerRecord<String, String> record = createRecord(model);
+        ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value);
 
         // here a different approach is used with a callback which then uses a new local transaction to
         // commit an update to the database. so on the one hand we'd have no blocked thread, on the other
@@ -94,27 +64,26 @@ public class Producer {
 
         long now = System.currentTimeMillis();
         producer.send(record, (metadata, exception) -> { //non-blocking!
-            updateStats(now);
-            System.out.println("Got ACK for message " + model.getId() + " " + metadata);
-            System.out.println("Average ACK " + ((double) totalWait.get() / totalNumCalls.get()) + "ms");
+            if(exception != null){
+                // TODO handle exception
+                exception.printStackTrace();
+            }else{
+                updateStats(now);
+                System.out.println("Got ACK for message " + value + " " + metadata);
+                System.out.println("Average ACK " + ((double) totalWait.get() / totalNumCalls.get()) + "ms");
 
-            // TODO here we'd call an bean which starts a new transaction in order to update
-            // the state from pending to sent, so that we don't retry at a later time...
+                f.accept(null);
+            }
         });
         System.out.println("Sent message to Kafka...");
-
-        return Response.ok(model).build();
     }
 
-    private ProducerRecord<String, String> createRecord(Model model) throws JsonProcessingException {
-TODO split framework and programmer code
-TODO get topic from props and fail if not present
-
-        String key = "model-created";
-        return new ProducerRecord<>(
-                topic,
-                key,
-                objectMapper.writeValueAsString(model));
+    private void updateStats(long now) {
+        long diff = System.currentTimeMillis() - now;
+        if(diff < 100) { // ignore large values eg at startup
+            totalWait.addAndGet(diff);
+            totalNumCalls.incrementAndGet();
+        }
     }
 
     private org.apache.kafka.clients.producer.Producer<String, String> createKafkaPublisher() {
@@ -127,13 +96,6 @@ TODO get topic from props and fail if not present
         props.put("value.serializer", StringSerializer.class.getCanonicalName());
 
         return new KafkaProducer<>(props);
-    }
-
-    private Model processRequest() {
-        Model model = new Model();
-        model.setId(UUID.randomUUID().toString());
-        model.setName("asdf");
-        return model;
     }
 
 }
