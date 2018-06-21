@@ -82,6 +82,11 @@ or...
 
     mvn clean package && java -jar target/consumer-swarm.jar
 
+Start a second consumer to test load balancing:
+
+    java -Dswarm.port.offset=2 -jar target/consumer-swarm.jar
+
+
 # Notes
 
 - Load Balancing => See notes in ProducerRestResource
