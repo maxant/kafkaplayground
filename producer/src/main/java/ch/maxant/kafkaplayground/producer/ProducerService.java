@@ -35,6 +35,7 @@ public class ProducerService {
     public void sync(String topic, String key, String value) throws Exception {
 
         ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value);
+        System.out.println("sending message with key=" + record.key() + ", partition=" + record.partition());
 
         // with this approach we block the thread until we get confirmation that the message has been published
         // according to our requirements (acks=3), but at the same time we don't commit the local transaction
@@ -52,9 +53,10 @@ public class ProducerService {
         // at the expense of blocking the thread
     }
 
-    public void async(String topic, String key, String value, Consumer f) throws Exception {
+    public void async(String topic, String key, String value, Consumer<Void> f) {
 
         ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value);
+        System.out.println("sending message with key=" + record.key() + ", partition=" + record.partition());
 
         // here a different approach is used with a callback which then uses a new local transaction to
         // commit an update to the database. so on the one hand we'd have no blocked thread, on the other

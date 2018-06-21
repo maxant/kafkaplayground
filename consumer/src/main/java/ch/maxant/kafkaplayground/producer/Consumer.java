@@ -3,6 +3,7 @@ package ch.maxant.kafkaplayground.producer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.KafkaException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -35,7 +36,7 @@ public class Consumer {
     SessionContext context;
 
     private KafkaConsumer<String, String> consumer;
-    private AtomicIntegerArray stateOfPlay = new AtomicIntegerArray(new int[]{0,0}); //isPolling; isShuttindDown
+    private AtomicIntegerArray stateOfPlay = new AtomicIntegerArray(new int[]{0,0}); //isPolling; isShuttingDown
 
     private AtomicLong stats = new AtomicLong();
     private long pollInterval = Integer.getInteger("kafka.poll.interval", 1000);
@@ -55,27 +56,32 @@ public class Consumer {
     }
 
     @Asynchronous
-    public Future<Void> poll(){
+    public Future<Void> poll() {
         stateOfPlay.set(0, 1); //polling
         if(stateOfPlay.get(1) == 0) { //not shutting down
-            System.out.println("polling...");
-            long start = System.currentTimeMillis();
-            ConsumerRecords<String, String> records = consumer.poll(pollInterval); //blocks if no data is available
-            start = System.currentTimeMillis() - start;
-            if(start < pollInterval - 10){
-                totalNumCalls.incrementAndGet();
-                totalWait.addAndGet(start);
+            try{
+                System.out.println("polling...");
+                long start = System.currentTimeMillis();
+                ConsumerRecords<String, String> records = consumer.poll(pollInterval); //blocks if no data is available
+                start = System.currentTimeMillis() - start;
+                if(start < pollInterval - 10){
+                    totalNumCalls.incrementAndGet();
+                    totalWait.addAndGet(start);
+                }
+
+                System.out.println("polled. got " + records.count() + " records. avg poll time where data available: " + ((double) totalWait.get() / totalNumCalls.get()) + "ms");
+
+                handleRecords(records);
+
+                commitKafka();
+
+            } catch (KafkaException e) {
+                System.err.println("Failed to poll, see stack trace below");
+                e.printStackTrace();
+            } finally {
+                stateOfPlay.set(0, 0); //no longer polling
+                self().poll();
             }
-
-            System.out.println("polled. got " + records.count() + " records. avg poll time where data available: " + ((double) totalWait.get() / totalNumCalls.get()) + "ms");
-
-            handleRecords(records);
-
-            commitKafka();
-
-            stateOfPlay.set(0, 0); //no longer polling
-
-            self().poll();
         }
 
         return new AsyncResult<>(null);

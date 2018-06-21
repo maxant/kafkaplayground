@@ -38,6 +38,7 @@ A place to play with Apache Kafka
     bin/kafka-server-stop.sh config/server2.properties
 
     # create topic
+    # one partition replicated to both nodes. alternatively create more partitions and let the producer decide where to put messages
     bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 1 --topic my-topic
 
     # list topics:
@@ -52,7 +53,8 @@ A place to play with Apache Kafka
     # subscribe:
     bin/kafka-console-consumer.sh --bootstrap-server localhost:9093 --topic my-topic --from-beginning
 
-# Starting Producer
+
+# Starting the Producer
 
     cd producer
 
@@ -70,7 +72,7 @@ or synchronously...
 
     http://localhost:8080/producer/rest/p/sync
 
-# Starting Consumer
+# Starting the Consumer
 
     cd consumer
 
@@ -80,13 +82,18 @@ or...
 
     mvn clean package && java -jar target/consumer-swarm.jar
 
+# Notes
+
+- Load Balancing => See notes in ProducerRestResource
+- How to seek to latest, so skip anything we havent received since being down? => no need to worry about that since the cluster knows whichi offset the group last processed
+- how to simulate jms topic? => send UUID with to groupId
+    - but that needs us to be able to tell it from which offset to start. ie to skip everything, ie a non-durable topic consumer => consumer.seek(...).
+- if a client's offset is stored in zookeeper and client then fails catastrophically and never restarts, will that work? since cliend ID is a UUID, no other client will every take over from that last offset. => yes, since the offset is stored per group-id
+- is it possible to create topics on the fly or programatically or via REST ie without admin command line?
+    - yes, but then theres no control over partitioning etc.
+
 
 # TODO
 
-- is it possible to create topics on the fly or programatically or via REST ie without admin command line?
-- if a client's offset is stored in zookeeper and client then fails catastrophically and never restarts, will that work? since cliend ID is a UUID, no other client will every take over from that last offset. => yes, since the offset is stored per group-id => check this is true!!!
-- how to simulate jms topic? => send UUID with to groupId
-    - but that needs us to be able to tell it from which offset to start. ie to skip everything, ie a non-durable topic consumer => consumer.seek(...).
-- how to seek to latest, so skip anything we havent received since being down?
-- load balancing between instances of consumer with same groupId doesnt seem to be working
+_Nothing right now_
 
