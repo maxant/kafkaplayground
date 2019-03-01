@@ -11,7 +11,11 @@ A place to play with Apache Kafka
     rm kafka_2.11-2.1.1.tgz
     git init
 
-# Starting Kafka
+# Starting Kafka with docker
+
+Run `run.sh` which builds images for Zookeeper and Kafka and starts Zookeeper and two Kafka brokers with IDs 1 and 2.
+
+# Starting Kafka locally
 
     # adjust memory if required
     export KAFKA_HEAP_OPTS="-Xmx500M -Xms500M"
@@ -51,10 +55,10 @@ A place to play with Apache Kafka
     bin/kafka-topics.sh --zookeeper localhost:2181 --alter --topic my-topic --partitions 2
 
     # publish:
-    bin/kafka-console-producer.sh --broker-list localhost:9093 --topic my-topic
+    bin/kafka-console-producer.sh --broker-list localhost:9092 --topic my-topic
 
     # subscribe:
-    bin/kafka-console-consumer.sh --bootstrap-server localhost:9093 --topic my-topic --from-beginning
+    bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my-topic --from-beginning
 
 
 # Starting the Producer
