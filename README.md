@@ -5,10 +5,10 @@ A place to play with Apache Kafka
 
 # Installation
 
-    wget http://www-eu.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0
-    tar -xzf kafka_2.11-1.1.0.tgz
-    echo kafka_2.11-1.1.0.tgz > .gitignore
-    rm kafka_2.11-1.1.0.tgz
+    wget https://www-eu.apache.org/dist/kafka/2.1.1/kafka_2.11-2.1.1.tgz
+    tar -xzf kafka_2.11-2.1.1.tgz
+    echo kafka_2.11-2.1.1 >> .gitignore
+    rm kafka_2.11-2.1.1.tgz
     git init
 
 # Starting Kafka
@@ -17,7 +17,7 @@ A place to play with Apache Kafka
     export KAFKA_HEAP_OPTS="-Xmx500M -Xms500M"
 
     # start zookeeper
-    cd kafka_2.11-1.1.0
+    cd kafka_2.11-2.1.1
     bin/zookeeper-server-start.sh config/zookeeper.properties
 
     # create two configs to set up multi-broker 
