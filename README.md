@@ -13,11 +13,44 @@ A place to play with Apache Kafka
 
 # Starting Kafka with docker
 
-Prerequisites: `sudo chmod a+w /etc/hosts`
+The generated `maxant/kafka` image uses a shell script to append important properties to the
+`config/server.properties` file in the container, so that it works.
+See `start-kafka.sh` for details, including how it MUST set
+`advertised.listeners` to the containers IP address, otherwise kafka has
+REAL PROBLEMS.
 
 Run `./build.sh` which builds images for Zookeeper and Kafka
 
-Run `./run.sh` which starts Zookeeper and two Kafka brokers with IDs 1 and 2.
+Prerequisites: `sudo chmod a+w /etc/hosts`
+
+Run `./run.sh` which starts Zookeeper and two Kafka brokers with IDs 1 and 2,
+listening on ports 9091 and 9092 respectively.
+
+This script also shows how to append the hosts file so that service names can
+be used by applications, but it requires the user to `sudo`. It also contains
+examples of waiting for Zookeeper / Kafka logs to contain certain logs before
+the script continues.
+
+Useful Docker commands:
+
+    docker exec -it kafka_1 bash
+
+    # stopped / killed processes
+    docker ps --all
+
+    # remove container (so new one can be run)
+    docker rm kafka_2
+
+    # kill container
+    docker kill kafka_2
+
+    # delete images
+    docker rmi maxant/kafka
+
+    # or you can use just first few letters of id
+    docker rmi 23 48 35 3c3 0
+
+Docker ports:
 
 # Starting Kafka locally
 
@@ -32,9 +65,9 @@ Run `./run.sh` which starts Zookeeper and two Kafka brokers with IDs 1 and 2.
     cp config/server.properties config/server1.properties 
     cp config/server.properties config/server2.properties 
 
-    # modify both file respectively:
+    # modify both file respectively (use ports 9091 & 9092):
     #     broker.id=2
-    #     listeners=PLAINTEXT://:9094
+    #     listeners=PLAINTEXT://:9092
     #     log.dir=/tmp/kafka-logs-2
 
     # start kafka
@@ -86,6 +119,10 @@ or synchronously...
 
     http://localhost:8080/producer/rest/p/sync
 
+Override the bootstrap list like this:
+
+    -Dkafka.bootstrap.servers=localhost:9092,localhost:9091
+
 # Starting the Consumer
 
     cd consumer
@@ -100,6 +137,9 @@ Start a second consumer to test load balancing:
 
     java -Dswarm.port.offset=2 -jar target/consumer-swarm.jar
 
+Override the bootstrap list like this:
+
+    -Dkafka.bootstrap.servers=localhost:9092,localhost:9091
 
 # Windows
 
@@ -123,6 +163,13 @@ Start a second consumer to test load balancing:
     - yes, but then theres no control over partitioning etc.
 - if a consumer runs before topic is created, then topic is created with default values.
 - to reset everything, stop consumers, stop producers, stop nodes, stop zookeeper, delete everything under /tmp/, restart zookeeper, restart nodes, restart consumers, restart producers
+- if you have more consumers than partitions, they don't get any messages. you can have maximum one
+  consumer per partition (within a consumer group). e.g.:
+  - 1 consumer,  4 partitions => all records go to single consumer
+  - 2 consumers, 4 partitions => two each
+  - 3 consumers, 4 partitions => one gets two partition, the other two get one each
+  - 4 consumers, 4 partitions => one each
+  - 5 consumers, 4 partitions => **one idle**, 4 get one partition each
 
 # TODO
 

@@ -1,12 +1,22 @@
 #########################################################
 # runs images. ensure you call build.sh first!
 #########################################################
+#
+# NOTE: no volumes are used, so restarting all images
+#       causes data and topic loss!
+#########################################################
+#
+# TODO at the moment, if you want to change the number
+#      of brokers, you need to do it here and down below
+#      it would be nice to be able to set a param just once
+#########################################################
 
+# force user to enter password, so we can do sudo to change hosts file
 sudo echo ""
 
 #########################################################
 # stop kafka brokers
-for id in {1..1}
+for id in {1..2}
 do
     p=909$id:9092
 
@@ -82,7 +92,7 @@ echo docker host is: $dockerhost
 # start kafka brokers
 
 kafkahosts=
-for id in {1..1}
+for id in {1..2}
 do
     p=909$id:9092
 
@@ -97,5 +107,17 @@ do
     kafkahosts=$kafkahost,$kafkahosts
 done
 
-sleep 2
+
+counter=0
+until [ $counter -ge 1 ]
+do
+    echo waiting for kafka_1...
+    sleep 0.5;
+    counter=`docker logs kafka_1 | grep "started (kafka.server.KafkaServer)" | wc -l`
+done
+
+echo creating topic
+kafka_2.11-2.1.1/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 4 --topic my-topic
+echo topic created
+echo ""
 echo COMPLETED. Kafka boostrap servers: $kafkahosts

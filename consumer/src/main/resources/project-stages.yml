@@ -5,7 +5,7 @@ swarm:
       path: /consumer
 kafka:
    bootstrap:
-      servers: localhost:9093,localhost:9094
+      servers: localhost:9091,localhost:9092
    group:
       id: appName
    topics: my-topic,another-topic
