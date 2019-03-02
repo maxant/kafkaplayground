@@ -26,6 +26,8 @@ Prerequisites: `sudo chmod a+w /etc/hosts`
 Run `./run.sh` which starts Zookeeper and two Kafka brokers with IDs 1 and 2,
 listening on ports 9091 and 9092 respectively.
 
+This script passes the Zookeeper
+
 This script also shows how to append the hosts file so that service names can
 be used by applications, but it requires the user to `sudo`. It also contains
 examples of waiting for Zookeeper / Kafka logs to contain certain logs before
@@ -50,7 +52,29 @@ Useful Docker commands:
     # or you can use just first few letters of id
     docker rmi 23 48 35 3c3 0
 
+    # ip address of container
+    docker inspect -f {{.NetworkSettings.IPAddress}} kafka_2
+
+    # status of container, eg. "running"
+    docker inspect -f {{.State.Status}} kafka_2
+
+    # attach and run interactively
+    docker exec -it kafka_2 bash
+
+    # tail log (-f follows, --tail 100 shows just last 100 lines)
+    docker logs -f kafka_2
+
+    # in order to start docker containers in the background, and NOT
+    # be flooded with their output, do the following which sends
+    # stdout and stderr to dev/null, and runs the process in the
+    # background. you can still tail logs as shown above.
+    docker run maxant/zookeeper >/dev/null 2>&1 &
+
+
 Docker ports:
+
+`-p 9091:9092` maps port 9092 from the process running inside the Docker container
+to port 9091 on the host, so that you can access it from outside via `localhost:9091`.
 
 # Starting Kafka locally
 
