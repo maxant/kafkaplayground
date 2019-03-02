@@ -13,7 +13,11 @@ A place to play with Apache Kafka
 
 # Starting Kafka with docker
 
-Run `run.sh` which builds images for Zookeeper and Kafka and starts Zookeeper and two Kafka brokers with IDs 1 and 2.
+Prerequisites: `sudo chmod a+w /etc/hosts`
+
+Run `./build.sh` which builds images for Zookeeper and Kafka
+
+Run `./run.sh` which starts Zookeeper and two Kafka brokers with IDs 1 and 2.
 
 # Starting Kafka locally
 
@@ -59,6 +63,9 @@ Run `run.sh` which builds images for Zookeeper and Kafka and starts Zookeeper an
 
     # subscribe:
     bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+
+    # list brokers:
+    bin/zookeeper-shell.sh localhost:2181 <<< "ls /brokers/ids"
 
 
 # Starting the Producer
