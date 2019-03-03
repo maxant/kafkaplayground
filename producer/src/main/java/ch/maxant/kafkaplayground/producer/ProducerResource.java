@@ -20,6 +20,19 @@ public class ProducerResource {
     @Inject
     ProducerService producerService;
 
+    @Inject
+    LoadProducer loadProducer;
+
+    @GET
+    @Path("toggleLoad")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response toggleLoad() throws Exception {
+
+        loadProducer.toggle();
+
+        return Response.ok().build();
+    }
+
     @GET
     @Path("sync")
     @Produces(MediaType.APPLICATION_JSON)

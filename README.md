@@ -143,6 +143,10 @@ or synchronously...
 
     http://localhost:8080/producer/rest/p/sync
 
+Toggle load:
+
+    http://localhost:8080/producer/rest/p/toggleLoad
+
 Override the bootstrap list like this:
 
     -Dkafka.bootstrap.servers=localhost:9092,localhost:9091
@@ -178,8 +182,13 @@ Override the bootstrap list like this:
 
 # Notes
 
-- Load Balancing => See notes in ProducerResource
-- How to seek to latest, so skip anything we havent received since being down? => no need to worry about that since the cluster knows whichi offset the group last processed
+- Load Balancing => See notes in `ProducerResource`:
+  - https://stackoverflow.com/a/47291442/458370:
+    - *"If a valid partition number is specified, that partition will be used when sending the record."*
+    - *"If no partition is specified but a key is present a partition will be chosen using a hash of the key."*
+    - *"If neither key nor partition is present a partition will be assigned in a round-robin fashion."*
+  - The `ProducerResource` sets the key to `null` and doesn't specifiy a parition number, in order to get round-robin load balancing.
+- How to seek to the latest record, so skip anything we haven't received since being down? => no need to worry about that since the cluster knows whichi offset the group last processed
 - how to simulate jms topic? => send UUID with to groupId
     - but that needs us to be able to tell it from which offset to start. ie to skip everything, ie a non-durable topic consumer => consumer.seek(...).
 - if a client's offset is stored in zookeeper and client then fails catastrophically and never restarts, will that work? since cliend ID is a UUID, no other client will every take over from that last offset. => yes, since the offset is stored per group-id
@@ -194,6 +203,49 @@ Override the bootstrap list like this:
   - 3 consumers, 4 partitions => one gets two partition, the other two get one each
   - 4 consumers, 4 partitions => one each
   - 5 consumers, 4 partitions => **one idle**, 4 get one partition each
+- If the number of consumers is changed, Kafka rebalances. When there is no load, rebalancing takes between 5 and 20 ms.
+  Under a load of producing more than 300 records per second (and consumed by two consumers, limited by creation rather
+  than consumption; running on a single i5 Thinkpad laptop at roughly 100% CPU), one of the two consumers was shut down.
+  The remaining consumer logged the following:
+
+      20:17:58,008 INFO  [stdout] polling...
+      20:17:58,010 INFO  [o.a.k.c.c.i.AbstractCoordinator] Attempt to heartbeat failed since group is rebalancing
+      20:17:58,015 INFO  [stdout] polled. got 1 records.
+      20:17:58,015 INFO  [stdout] ...value = {"createdAt": 1551640678001}
+      20:17:58,027 INFO  [stdout] polling...
+      20:17:58,029 INFO  [o.a.k.c.c.i.ConsumerCoordinator] Revoking previously assigned partitions [my-topic-2, my-topic-3]
+      20:17:58,030 INFO  [o.a.k.c.c.i.AbstractCoordinator] (Re-)joining group
+      20:17:58,037 INFO  [o.a.k.c.c.i.AbstractCoordinator] Successfully joined group with generation 13
+      20:17:58,038 INFO  [o.a.k.c.c.i.ConsumerCoordinator] Setting newly assigned partitions [another-topic-0, my-topic-0, my-topic-1, my-topic-2, my-topic-3]
+      20:17:58,040 INFO  [stdout] polled. got 2 records.
+      20:17:58,040 INFO  [stdout] ...value = {"createdAt": 1551640678010}   --> this message was received 30ms after creation in the producer
+      20:17:58,045 INFO  [stdout] polling...
+      20:17:58,058 INFO  [stdout] polled. got 62 records.
+      ...
+      20:17:58,092 INFO  [stdout] polled. got 5 records.
+      ...
+      20:17:58,112 INFO  [stdout] polled. got 13 records.
+      ...
+      20:17:58,124 INFO  [stdout] polled. got 8 records.
+      ...
+      20:17:58,131 INFO  [stdout] polled. got 3 records.
+      ...
+      20:17:58,141 INFO  [stdout] polled. got 2 records.
+      ...
+      20:17:58,146 INFO  [stdout] polled. got 2 records.
+      ...
+      20:17:58,152 INFO  [stdout] polled. got 2 records.
+
+  - Under load it was receiving records 14ms after they were created in the producer
+  - Before the rebalance, the consumer was receiving one record at a time. Afterwards, it took a few polls to
+    stabilise, but then it received 2 records per poll.
+  - Rebalancing took about 30ms.
+  - The messages received after the rebalance were at most 30ms old (measured as the creation time from the producer)
+  - [Chapter 4 of "Kafka: The Definitive Guide"](https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html)
+    states: "*During a rebalance, consumers can’t consume messages, so a rebalance is basically a short window of unavailability of the entire consumer group.*",
+    but these tests suggest it isn't critical, even under load.
+
+
 
 # TODO
 

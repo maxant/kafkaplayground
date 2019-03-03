@@ -31,6 +31,7 @@ public class Consumer {
 
     private static AtomicLong totalWait = new AtomicLong();
     private static AtomicLong totalNumCalls = new AtomicLong();
+    private static AtomicLong numRecordsReceived = new AtomicLong();
 
     @Resource
     SessionContext context;
@@ -72,6 +73,8 @@ public class Consumer {
                 System.out.println("polled. got " + records.count() + " records. avg poll time where data available: " + ((double) totalWait.get() / totalNumCalls.get()) + "ms");
 
                 handleRecords(records);
+
+                System.out.println(" received " + numRecordsReceived.addAndGet(records.count()) + " messages in total");
 
                 commitKafka();
 
