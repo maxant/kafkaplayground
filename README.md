@@ -121,6 +121,9 @@ to port 9091 on the host, so that you can access it from outside via `localhost:
     # subscribe:
     bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my-topic --from-beginning
 
+    # subscribe all topics matching regexp
+    bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --whitelist '.*'
+
     # list brokers:
     bin/zookeeper-shell.sh localhost:2181 <<< "ls /brokers/ids"
 
